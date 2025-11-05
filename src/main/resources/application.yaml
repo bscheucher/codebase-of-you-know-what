@@ -1,0 +1,82 @@
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${PID} --- [%15.15t, %X{user_id}] %-40.40logger{39}  : %m%n%wEx"
+  level:
+    root: error
+    org:
+      springframework: error
+      springframework.web: error
+      springframework.security: error
+      hibernate: error
+    net:
+      sf:
+        jasperreports: debug
+        jasperreports.engine.fonts: debug
+    com:
+      ibosng:
+        gatewayservice: info
+        dbservice: info
+        dbibosservice: info
+        workflowservice: info
+        reportservice: info
+        microsoftgraphservice: info
+        validationservice: info
+        moxisservice: info
+        natifservice: info
+        lhrservice: info
+        usercreationservice: info
+      microsoft: info
+spring:
+  banner:
+    location: classpath:banner.txt
+  flyway:
+    enabled: true
+    locations: classpath:/db/migration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ibosng
+    username: postgres
+    password: mySecret
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password:
+
+legacyDatasource:
+  url: jdbc:mariadb://localhost:3306/ibos
+  username: ibos
+  password: ibos
+
+sso:
+  clientId: dummy-client-id-12345
+  clientSecret: dummy-secret-67890
+  tenantId: dummy-tenant-id-abcde
+
+oneDrive:
+  clientId: dummy-client-id-12345
+  clientSecret: dummy-secret-67890
+  tenantId: dummy-tenant-id-abcde
+
+mail:
+  scope: https://graph.microsoft.com/.default
+  clientId: dummy-client-id-12345
+  clientSecret: dummy-secret-67890
+  tenantId: dummy-tenant-id-abcde
+
+lhr:
+  url: https://dummy.lhr.at/api/v1/
+  username: dummy-username
+  password:  dummy-password
+
+storageAccount:
+  name: dummy-account-name
+  key: dummy-account-key
+
+moxis:
+  url: https://dummy.moxis.at/api/v1/
+  username: dummy-username
+  password: dummy-password
+
+azureOpenAi:
+  endpoint: https://dummy.azureopenai.at/api/v1/
+  key: dummy-key

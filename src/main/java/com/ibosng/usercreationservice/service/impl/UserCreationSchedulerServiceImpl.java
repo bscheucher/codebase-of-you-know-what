@@ -1,0 +1,50 @@
+package com.ibosng.usercreationservice.service.impl;
+
+import com.ibosng.microsoftgraphservice.config.properties.OneDriveProperties;
+import com.ibosng.microsoftgraphservice.services.OneDriveDocumentService;
+import com.ibosng.usercreationservice.service.UserCreationAnlageIbosNGService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class UserCreationSchedulerServiceImpl {
+    private static final String CRON_1_MINUTE = "0 * * * * *";
+    private final AtomicBoolean processRunning = new AtomicBoolean(false);
+
+    private final OneDriveProperties oneDriveProperties;
+    private final OneDriveDocumentService oneDriveDocumentService;
+    private final UserCreationAnlageIbosNGService userAnlageIbosNGService;
+    private final RedissonClient redissonClient;
+
+    @Scheduled(cron = CRON_1_MINUTE)
+    public void checkIncomingFiles() {
+        RLock lock = redissonClient.getLock("userCreationService:CheckIncomingFilesLock");  // Distributed lock with Redis
+        try {
+            if (lock.tryLock(0, 10, TimeUnit.MINUTES)) {  // Attempt to acquire the lock
+                try {
+                    log.info("Checking incoming files");
+                    userAnlageIbosNGService.proccessMitarbeiters(
+                            oneDriveDocumentService.getUploadedFiles(oneDriveProperties.getAngelegteBenutzerNeu()));
+                } catch (Exception ex) {
+                    log.error("Error occurred while checking incoming files", ex);
+                } finally {
+                    lock.unlock();  // Always release the lock in the finally block
+                }
+            } else {
+                log.info("Another instance is already processing this task.");
+            }
+        } catch (InterruptedException e) {
+            log.error("Failed to acquire lock", e);
+            Thread.currentThread().interrupt();  // Restore interrupted state
+        }
+    }
+}

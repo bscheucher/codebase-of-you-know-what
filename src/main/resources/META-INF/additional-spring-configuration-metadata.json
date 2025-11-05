@@ -1,0 +1,96 @@
+{
+  "properties": [
+    {
+      "name": "legacyDatasource.url",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "legacyDatasource.username",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "legacyDatasource.password",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "sso.clientId",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "sso.clientSecret",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "sso.tenantId",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "oneDrive.clientId",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "oneDrive.clientSecret",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "oneDrive.tenantId",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "mail.scope",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "mail.clientId",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "mail.clientSecret",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "mail.tenantId",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "lhr.url",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "lhr.username",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "lhr.password",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "storageAccount.name",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "storageAccount.key",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "moxis.password",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "moxis.url",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "moxis.username",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "azureOpenAi.endpoint",
+      "type": "java.lang.String"
+    },
+    {
+      "name": "azureOpenAi.key",
+      "type": "java.lang.String"
+    }
+  ]
+}
