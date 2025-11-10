@@ -11,6 +11,7 @@ import com.ibosng.gatewayservice.services.MitarbeiterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -112,7 +113,7 @@ public class MitarbeiterController {
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
             @RequestParam(required = false) Integer workflowId,
             @RequestParam(required = false, defaultValue = "false") Boolean isOnboarding,
-            @RequestBody StammdatenDto stammdatenDto) {
+            @RequestBody @Valid StammdatenDto stammdatenDto) {
         return mitarbeiterService.saveStammdaten(stammdatenDto, workflowId, isOnboarding, authorizationHeader);
     }
 

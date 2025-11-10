@@ -1,5 +1,7 @@
 package com.ibosng.dbservice.dtos.mitarbeiter;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,6 +24,8 @@ public class StammdatenDto {
     private String nachname;
     private String vorname;
     private String geburtsname;
+    @NotNull
+    @NotBlank
     private String svnr;
     private String ecard;
     private String geschlecht;
