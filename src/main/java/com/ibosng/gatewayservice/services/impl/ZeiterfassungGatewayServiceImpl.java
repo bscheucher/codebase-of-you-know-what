@@ -350,11 +350,10 @@ public class ZeiterfassungGatewayServiceImpl implements ZeiterfassungGatewayServ
                 abwesenheit.getFuehrungskraefte().add(fuehrungskraeft);
             }
             abwesenheit = abwesenheitService.save(abwesenheit);
-            abwesenheitDtoPayloadType.setAttributes(Collections.singletonList(optional.map(abwesenheitService::mapToAbwesenheitDto).orElse(null)));
+            abwesenheitDtoPayloadType.setAttributes(Collections.singletonList(abwesenheitService.mapToAbwesenheitDto(abwesenheit)));
             AbwesenheitDto savedAbwesenheitDto = abwesenheitRequest.getBody();
 
             if (abwesenheit.getStatus().equals(AbwesenheitStatus.VALID)) {
-                abwesenheit = optional.get();
                 String[] emails = abwesenheit.getFuehrungskraefte().stream().map(Benutzer::getEmail).toArray(String[]::new);
 
                 LocalDate startDate = savedAbwesenheitDto.getStartDate();
