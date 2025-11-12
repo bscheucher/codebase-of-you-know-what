@@ -3,32 +3,27 @@ package com.ibosng.gatewayservice.services;
 import com.ibosng.dbmapperservice.services.ZeitbuchungenMapperService;
 import com.ibosng.dbservice.dtos.mitarbeiter.AbwesenheitDto;
 import com.ibosng.dbservice.entities.Benutzer;
+import com.ibosng.dbservice.entities.Zeitausgleich;
 import com.ibosng.dbservice.entities.lhr.Abwesenheit;
+import com.ibosng.dbservice.entities.lhr.AbwesenheitStatus;
 import com.ibosng.dbservice.entities.masterdata.Personalnummer;
-import com.ibosng.dbservice.entities.mitarbeiter.Stammdaten;
-import com.ibosng.dbservice.entities.zeitbuchung.Leistungserfassung;
-import com.ibosng.dbservice.entities.zeiterfassung.Zeitspeicher;
 import com.ibosng.dbservice.services.ZeitausgleichService;
 import com.ibosng.dbservice.services.lhr.AbwesenheitService;
 import com.ibosng.dbservice.services.mitarbeiter.PersonalnummerService;
-import com.ibosng.dbservice.services.mitarbeiter.StammdatenService;
 import com.ibosng.dbservice.services.zeitbuchung.LeistungserfassungService;
 import com.ibosng.dbservice.services.zeitbuchung.ZeitbuchungService;
 import com.ibosng.dbservice.services.zeiterfassung.AuszahlungsantragService;
 import com.ibosng.dbservice.services.zeiterfassung.ZeitspeicherService;
-import com.ibosng.gatewayservice.config.DataSourceConfigTest;
 import com.ibosng.gatewayservice.dtos.response.PayloadResponse;
 import com.ibosng.gatewayservice.enums.PayloadTypes;
 import com.ibosng.gatewayservice.services.impl.ZeiterfassungGatewayServiceImpl;
 import com.ibosng.gatewayservice.utils.Helpers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.ResponseEntity;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +31,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest(classes = DataSourceConfigTest.class)
+@ExtendWith(MockitoExtension.class)
 class ZeiterfassungGatewayServiceImplTest {
 
     @InjectMocks
@@ -61,9 +56,6 @@ class ZeiterfassungGatewayServiceImplTest {
     private Gateway2Validation gateway2Validation;
 
     @Mock
-    private StammdatenService stammdatenService;
-
-    @Mock
     private ZeitbuchungenMapperService zeitbuchungenMapper;
 
     @Mock
@@ -80,68 +72,149 @@ class ZeiterfassungGatewayServiceImplTest {
 
 
     @Test
-    void testGetAbwesenheit() {
+    void testGetAbwesenheit_Found() {
+        // Given
         Integer abwesenheitId = 1;
+        Abwesenheit abwesenheit = new Abwesenheit();
+        abwesenheit.setId(abwesenheitId);
 
-        Abwesenheit mockedAbwesenheit = new Abwesenheit();
-        mockedAbwesenheit.setId(abwesenheitId);
-        when(abwesenheitService.findById(anyInt())).thenReturn(Optional.of(mockedAbwesenheit));
-        when(abwesenheitService.mapToAbwesenheitDto(any())).thenReturn(AbwesenheitDto.builder().id(1).build());
+        AbwesenheitDto expectedDto = AbwesenheitDto.builder().id(abwesenheitId).build();
+
+        when(abwesenheitService.findById(abwesenheitId)).thenReturn(Optional.of(abwesenheit));
+        when(abwesenheitService.mapToAbwesenheitDto(abwesenheit)).thenReturn(expectedDto);
+
+        // When
         PayloadResponse response = zeiterfassungGatewayService.getAbwesenheit(abwesenheitId);
 
-        assertNotNull(response);
+        // Then
+        assertTrue(response.isSuccess());
+        assertNotNull(response.getData());
+        assertEquals(1, response.getData().size());
+        assertEquals(PayloadTypes.ABWESENHEIT.getValue(), response.getData().get(0).getType());
+        assertEquals(1, response.getData().get(0).getAttributes().size());
+        assertEquals(expectedDto, response.getData().get(0).getAttributes().get(0));
+
+        verify(abwesenheitService).findById(abwesenheitId);
+        verify(abwesenheitService).mapToAbwesenheitDto(abwesenheit);
+    }
+
+    @Test
+    void testGetAbwesenheit_NotFound() {
+        // Given
+        Integer abwesenheitId = 999;
+
+        when(abwesenheitService.findById(abwesenheitId)).thenReturn(Optional.empty());
+        when(zeitausgleichService.findAllZeitausgleichInPeriod(abwesenheitId)).thenReturn(Collections.emptyList());
+
+        // When
+        PayloadResponse response = zeiterfassungGatewayService.getAbwesenheit(abwesenheitId);
+
+        // Then
+        assertFalse(response.isSuccess());
+
+        verify(abwesenheitService).findById(abwesenheitId);
+        verify(zeitausgleichService).findAllZeitausgleichInPeriod(abwesenheitId);
+    }
+
+    @Test
+    void testGetAbwesenheit_FallbackToZeitausgleich() {
+        // Given
+        Integer abwesenheitId = 1;
+        Zeitausgleich zeitausgleich = new Zeitausgleich();
+        zeitausgleich.setId(abwesenheitId);
+
+        AbwesenheitDto expectedDto = AbwesenheitDto.builder().id(abwesenheitId).build();
+
+        when(abwesenheitService.findById(abwesenheitId)).thenReturn(Optional.empty());
+        when(zeitausgleichService.findAllZeitausgleichInPeriod(abwesenheitId))
+            .thenReturn(List.of(zeitausgleich));
+        when(zeitausgleichService.mapListZeitausgleichToListAbwesenheitDto(List.of(zeitausgleich)))
+            .thenReturn(List.of(expectedDto));
+
+        // When
+        PayloadResponse response = zeiterfassungGatewayService.getAbwesenheit(abwesenheitId);
+
+        // Then
+        assertTrue(response.isSuccess());
+        assertNotNull(response.getData());
+        assertEquals(expectedDto, response.getData().get(0).getAttributes().get(0));
+
+        verify(abwesenheitService).findById(abwesenheitId);
+        verify(zeitausgleichService).findAllZeitausgleichInPeriod(abwesenheitId);
+    }
+
+    @Test
+    void testDeleteAbwesenheit_AcceptedStatus() {
+        // Given
+        Integer abwesenheitId = 1;
+        Abwesenheit abwesenheit = new Abwesenheit();
+        abwesenheit.setId(abwesenheitId);
+        abwesenheit.setStatus(AbwesenheitStatus.ACCEPTED);
+
+        Abwesenheit savedAbwesenheit = new Abwesenheit();
+        savedAbwesenheit.setId(abwesenheitId);
+        savedAbwesenheit.setStatus(AbwesenheitStatus.REQUEST_CANCELLATION);
+
+        AbwesenheitDto expectedDto = AbwesenheitDto.builder()
+            .id(abwesenheitId)
+            .status(AbwesenheitStatus.REQUEST_CANCELLATION)
+            .build();
+
+        when(abwesenheitService.findById(abwesenheitId)).thenReturn(Optional.of(abwesenheit));
+        when(abwesenheitService.save(any(Abwesenheit.class))).thenReturn(savedAbwesenheit);
+        when(abwesenheitService.mapToAbwesenheitDto(savedAbwesenheit)).thenReturn(expectedDto);
+
+        // When
+        PayloadResponse response = zeiterfassungGatewayService.deleteAbwesenheit(abwesenheitId);
+
+        // Then
         assertTrue(response.isSuccess());
         assertNotNull(response.getData());
         assertEquals(PayloadTypes.ABWESENHEIT.getValue(), response.getData().get(0).getType());
+
+        verify(abwesenheitService).findById(abwesenheitId);
+        verify(abwesenheitService).save(any(Abwesenheit.class));
     }
 
     @Test
-    @Disabled
-    void testDeleteAbwesenheit() {
-        Integer abwesenheitId = 123;
+    void testDeleteAbwesenheit_WrongStatus() {
+        // Given
+        Integer abwesenheitId = 1;
+        Abwesenheit abwesenheit = new Abwesenheit();
+        abwesenheit.setId(abwesenheitId);
+        abwesenheit.setStatus(AbwesenheitStatus.VALID); // Wrong status
 
+        when(abwesenheitService.findById(abwesenheitId)).thenReturn(Optional.of(abwesenheit));
+
+        // When
         PayloadResponse response = zeiterfassungGatewayService.deleteAbwesenheit(abwesenheitId);
 
-        assertNotNull(response, "Response should not be null");
-        assertTrue(response.isSuccess(), "Response should indicate success");
+        // Then
+        assertFalse(response.isSuccess());
+        assertEquals("Wrong urlaube status", response.getMessage());
+
+        verify(abwesenheitService).findById(abwesenheitId);
+        verify(abwesenheitService, never()).save(any());
     }
 
-    @Disabled
     @Test
-    void testGetAbwesenheitenList() {
-        String authorizationToken = "Bearer Authorization";
-        Abwesenheit mockedResult = new Abwesenheit();
-        mockedResult.setId(1);
-        mockedResult.setPersonalnummer(createPersonalNummer());
-        List<Abwesenheit> mockedAbwesenenheiten = new ArrayList<>();
-        mockedAbwesenenheiten.add(mockedResult);
+    void testDeleteAbwesenheit_NotFound() {
+        // Given
+        Integer abwesenheitId = 999;
 
-        Benutzer benutzer = new Benutzer();
-        benutzer.setFirstName("John");
-        benutzer.setLastName("Doe");
-        benutzer.setCreatedBy("Max");
-        benutzer.setEmail("email@test.com");
-        benutzer.setId(1);
-        String sortProperty = "startDate";
-        String sortDirection = "ASC";
-        int page = 0;
-        int size = 100;
+        when(abwesenheitService.findById(abwesenheitId)).thenReturn(Optional.empty());
+        when(zeitausgleichService.findAllZeitausgleichInPeriod(abwesenheitId))
+            .thenReturn(Collections.emptyList());
 
-        when(abwesenheitService.findAllByFuehrungskraefteId(anyInt())).thenReturn(mockedAbwesenenheiten);
-        when(benutzerDetailsService.getUserFromToken(authorizationToken)).thenReturn(benutzer);
-        PayloadResponse response = zeiterfassungGatewayService.getAbwesenheitenList(authorizationToken, true, "", null, sortProperty, sortDirection, page, size);
+        // When
+        PayloadResponse response = zeiterfassungGatewayService.deleteAbwesenheit(abwesenheitId);
 
-        assertNotNull(response);
-        assertTrue(response.isSuccess(), "Response should indicate success");
-    }
+        // Then
+        assertFalse(response.isSuccess());
+        assertEquals("No abwesenheit found found", response.getMessage());
 
-
-    private Personalnummer createPersonalNummer() {
-        Personalnummer personalnummer = new Personalnummer();
-        personalnummer.setId(1);
-        personalnummer.setPersonalnummer("123456");
-
-        return personalnummer;
+        verify(abwesenheitService).findById(abwesenheitId);
+        verify(zeitausgleichService).findAllZeitausgleichInPeriod(abwesenheitId);
     }
 
 }
