@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +25,6 @@ public class StammdatenDto {
     private String nachname;
     private String vorname;
     private String geburtsname;
-    @NotNull
     @NotBlank
     private String svnr;
     private String ecard;
